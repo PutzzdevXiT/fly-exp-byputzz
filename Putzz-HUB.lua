@@ -1,150 +1,178 @@
---// PUTZZ HUB V2
+--[[ PUTZZHUB MOBILE FULL VERSION ]]
 
 local player = game.Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
-local hum = char:WaitForChild("Humanoid")
+local humanoid = char:WaitForChild("Humanoid")
 local root = char:WaitForChild("HumanoidRootPart")
 
+local flying = false
+local speedOn = false
+local holoOn = false
+local flySpeed = 60
+
 -- GUI
-local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "PutzzHub"
+local gui = Instance.new("ScreenGui")
+gui.Parent = player.PlayerGui
+gui.ResetOnSpawn = false
 
--- OPEN BUTTON
-local openBtn = Instance.new("TextButton", gui)
-openBtn.Size = UDim2.new(0,50,0,50)
-openBtn.Position = UDim2.new(0.02,0,0.4,0)
-openBtn.Text = "P"
-openBtn.TextScaled = true
-openBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-openBtn.TextColor3 = Color3.fromRGB(255,255,0)
-
--- MAIN FRAME
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,220,0,200)
-frame.Position = UDim2.new(0.1,0,0.3,0)
+local frame = Instance.new("Frame")
+frame.Parent = gui
 frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-frame.Visible = false
+frame.Size = UDim2.new(0,200,0,200)
+frame.Position = UDim2.new(0.1,0,0.3,0)
 frame.Active = true
 frame.Draggable = true
 
--- TITLE
-local title = Instance.new("TextLabel", frame)
+local title = Instance.new("TextLabel")
+title.Parent = frame
 title.Size = UDim2.new(1,0,0,30)
-title.Text = "PUTZZ HUB"
+title.BackgroundColor3 = Color3.fromRGB(20,20,20)
+title.Text = "Putzzdev-HUB"
 title.TextColor3 = Color3.fromRGB(255,255,0)
-title.BackgroundColor3 = Color3.fromRGB(15,15,15)
 
--- CLOSE BUTTON
-local close = Instance.new("TextButton", frame)
-close.Size = UDim2.new(0,25,0,25)
-close.Position = UDim2.new(1,-30,0,2)
-close.Text = "X"
-close.BackgroundColor3 = Color3.fromRGB(120,0,0)
-close.TextColor3 = Color3.new(1,1,1)
+-- OPEN CLOSE BUTTON
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Parent = gui
+toggleBtn.Size = UDim2.new(0,60,0,30)
+toggleBtn.Position = UDim2.new(0,10,0.5,0)
+toggleBtn.Text = "CLOSE"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+toggleBtn.TextColor3 = Color3.new(1,1,1)
 
--- FEATURE FRAME
-local featureFrame = Instance.new("Frame", frame)
-featureFrame.Size = UDim2.new(1,0,1,-30)
-featureFrame.Position = UDim2.new(0,0,0,30)
-featureFrame.BackgroundTransparency = 1
-
--- BUTTON MAKER
-function makeButton(text,y)
-    local b = Instance.new("TextButton", featureFrame)
-    b.Size = UDim2.new(0.8,0,0,30)
-    b.Position = UDim2.new(0.1,0,0,y)
-    b.Text = text
-    b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    b.TextColor3 = Color3.new(1,1,1)
-    return b
-end
-
--- BUTTONS
-local flyBtn = makeButton("Fly + Speed",0.05)
-local expNameBtn = makeButton("EXP Name",0.25)
-local expCharBtn = makeButton("EXP Character",0.45)
-local holoBtn = makeButton("Hologram Player",0.65)
-
--- OPEN CLOSE
-openBtn.MouseButton1Click:Connect(function()
-    frame.Visible = true
+local menuOpen = true
+toggleBtn.MouseButton1Click:Connect(function()
+	menuOpen = not menuOpen
+	frame.Visible = menuOpen
+	toggleBtn.Text = menuOpen and "CLOSE" or "OPEN"
 end)
 
-close.MouseButton1Click:Connect(function()
-    frame.Visible = false
-end)
+-- FLY BUTTON
+local btnFly = Instance.new("TextButton")
+btnFly.Parent = frame
+btnFly.Text = "Fly OFF"
+btnFly.Size = UDim2.new(0.8,0,0,30)
+btnFly.Position = UDim2.new(0.1,0,0.25,0)
 
--- FLY SYSTEM
-local flying = false
-local speed = 60
+-- SPEED BUTTON
+local btnSpeed = Instance.new("TextButton")
+btnSpeed.Parent = frame
+btnSpeed.Text = "Speed OFF"
+btnSpeed.Size = UDim2.new(0.8,0,0,30)
+btnSpeed.Position = UDim2.new(0.1,0,0.5,0)
 
-flyBtn.MouseButton1Click:Connect(function()
+-- HOLOGRAM BUTTON
+local btnHolo = Instance.new("TextButton")
+btnHolo.Parent = frame
+btnHolo.Text = "Hologram Player OFF"
+btnHolo.Size = UDim2.new(0.8,0,0,30)
+btnHolo.Position = UDim2.new(0.1,0,0.75,0)
 
-    flying = not flying
+-- FLY SYSTEM (Analog)
+local bv
+local runService = game:GetService("RunService")
 
-    if flying then
+btnFly.MouseButton1Click:Connect(function()
 
-        local bv = Instance.new("BodyVelocity")
-        bv.MaxForce = Vector3.new(9e9,9e9,9e9)
-        bv.Parent = root
+	flying = not flying
 
-        while flying do
-            local cam = workspace.CurrentCamera
-            local dir = hum.MoveDirection
+	if flying then
 
-            bv.Velocity =
-                (cam.CFrame.LookVector * dir.Z +
-                cam.CFrame.RightVector * dir.X) * speed
+		btnFly.Text = "Fly ON"
 
-            game:GetService("RunService").RenderStepped:Wait()
-        end
+		bv = Instance.new("BodyVelocity")
+		bv.MaxForce = Vector3.new(100000,100000,100000)
+		bv.Parent = root
 
-        bv:Destroy()
+		humanoid.PlatformStand = true
 
-    end
-end)
+		runService.RenderStepped:Connect(function()
 
--- EXP NAME EFFECT
-expNameBtn.MouseButton1Click:Connect(function()
+			if flying and bv then
+				local moveDir = humanoid.MoveDirection
+				bv.Velocity = moveDir * flySpeed
+			end
 
-    local billboard = Instance.new("BillboardGui", root)
-    billboard.Size = UDim2.new(0,200,0,50)
-    billboard.StudsOffset = Vector3.new(0,3,0)
+		end)
 
-    local text = Instance.new("TextLabel", billboard)
-    text.Size = UDim2.new(1,0,1,0)
-    text.BackgroundTransparency = 1
-    text.Text = player.Name.." EXP"
-    text.TextColor3 = Color3.fromRGB(0,255,0)
-    text.TextScaled = true
+	else
+
+		btnFly.Text = "Fly OFF"
+
+		if bv then
+			bv:Destroy()
+		end
+
+		humanoid.PlatformStand = false
+
+	end
 
 end)
 
--- EXP CHARACTER EFFECT
-expCharBtn.MouseButton1Click:Connect(function()
+-- SPEED SYSTEM
+btnSpeed.MouseButton1Click:Connect(function()
 
-    for i=1,10 do
-        local p = Instance.new("Part", workspace)
-        p.Size = Vector3.new(0.5,0.5,0.5)
-        p.Position = root.Position + Vector3.new(math.random(-3,3),math.random(1,4),math.random(-3,3))
-        p.Anchored = true
-        p.Material = Enum.Material.Neon
-        p.Color = Color3.fromRGB(0,255,100)
+	speedOn = not speedOn
 
-        game.Debris:AddItem(p,1)
-    end
+	if speedOn then
+		btnSpeed.Text = "Speed ON"
+		humanoid.WalkSpeed = 60
+	else
+		btnSpeed.Text = "Speed OFF"
+		humanoid.WalkSpeed = 16
+	end
 
 end)
 
--- HOLOGRAM PLAYER
-holoBtn.MouseButton1Click:Connect(function()
+-- HOLOGRAM PLAYER SYSTEM
+btnHolo.MouseButton1Click:Connect(function()
 
-    for _,v in pairs(char:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Material = Enum.Material.ForceField
-            v.Color = Color3.fromRGB(0,255,255)
-            v.Transparency = 0.3
-        end
-    end
+	holoOn = not holoOn
+
+	if holoOn then
+
+		btnHolo.Text = "Hologram Player ON"
+
+		for _,plr in pairs(game.Players:GetPlayers()) do
+			if plr ~= player then
+
+				local c = plr.Character
+				if c then
+
+					for _,v in pairs(c:GetDescendants()) do
+						if v:IsA("BasePart") then
+							v.Material = Enum.Material.Neon
+							v.Transparency = 0.5
+							v.Color = Color3.fromRGB(0,255,255)
+						end
+					end
+
+				end
+
+			end
+		end
+
+	else
+
+		btnHolo.Text = "Hologram Player OFF"
+
+		for _,plr in pairs(game.Players:GetPlayers()) do
+			if plr ~= player then
+
+				local c = plr.Character
+				if c then
+
+					for _,v in pairs(c:GetDescendants()) do
+						if v:IsA("BasePart") then
+							v.Material = Enum.Material.Plastic
+							v.Transparency = 0
+						end
+					end
+
+				end
+
+			end
+		end
+
+	end
 
 end)
