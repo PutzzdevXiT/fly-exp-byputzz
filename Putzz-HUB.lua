@@ -9,7 +9,7 @@ local LocalPlayer = Players.LocalPlayer
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game.CoreGui
 
--- OPEN BUTTON
+-- BUTTON OPEN
 local Open = Instance.new("TextButton")
 Open.Parent = ScreenGui
 Open.Size = UDim2.new(0,50,0,50)
@@ -47,25 +47,13 @@ local Scroll = Instance.new("ScrollingFrame")
 Scroll.Parent = MainFrame
 Scroll.Position = UDim2.new(0,0,0,30)
 Scroll.Size = UDim2.new(1,0,1,-30)
-Scroll.CanvasSize = UDim2.new(0,0,0,500)
+Scroll.CanvasSize = UDim2.new(0,0,0,400)
 Scroll.ScrollBarThickness = 6
 Scroll.BackgroundTransparency = 1
 
 local Layout = Instance.new("UIListLayout")
 Layout.Parent = Scroll
 Layout.Padding = UDim.new(0,5)
-
--- LABEL MAKER
-local function makeLabel(text)
-	local l = Instance.new("TextLabel")
-	l.Parent = Scroll
-	l.Size = UDim2.new(1,-10,0,25)
-	l.Text = text
-	l.BackgroundTransparency = 1
-	l.TextColor3 = Color3.fromRGB(0,200,255)
-	l.TextScaled = true
-	return l
-end
 
 -- BUTTON MAKER
 local function makeButton(text)
@@ -78,21 +66,13 @@ local function makeButton(text)
 	return b
 end
 
--- PLAYER CATEGORY
-makeLabel("PLAYER")
-
+local espBtn = makeButton("ESP PLAYER")
+local lineBtn = makeButton("ESP LINE")
 local flyBtn = makeButton("FLY")
 local speedBtn = makeButton("SPEED OFF")
 local noclipBtn = makeButton("NOCLIP OFF")
-local invisibleBtn = makeButton("INVISIBLE OFF")
 
--- ESP CATEGORY
-makeLabel("ESP")
-
-local espBtn = makeButton("ESP PLAYER")
-local lineBtn = makeButton("ESP LINE")
-
--- ESP SYSTEM
+-- ESP
 local espEnabled = false
 local lineEnabled = false
 local ESPTable = {}
@@ -123,22 +103,19 @@ local function createESP(player)
 	line.Color = Color3.fromRGB(255,255,255)
 
 	ESPTable[player] = {box,name,dist,line}
+end
 
-	RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function()
 
-		if not espEnabled and not lineEnabled then
-			box.Visible = false
-			name.Visible = false
-			dist.Visible = false
-			line.Visible = false
-			return
-		end
+	for player,esp in pairs(ESPTable) do
+
+		local box,name,dist,line = unpack(esp)
 
 		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") then
+		if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
 
 			local hrp = char.HumanoidRootPart
-			local head = char:FindFirstChild("Head")
+			local head = char.Head
 
 			local pos,visible = Camera:WorldToViewportPoint(hrp.Position)
 
@@ -160,10 +137,13 @@ local function createESP(player)
 					name.Text = player.Name
 					name.Visible = true
 
-					local distance = (LocalPlayer.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
-					dist.Position = Vector2.new(pos.X, bottom.Y + 2)
-					dist.Text = math.floor(distance).."m"
-					dist.Visible = true
+					local myChar = LocalPlayer.Character
+					if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+						local distance = (myChar.HumanoidRootPart.Position - hrp.Position).Magnitude
+						dist.Text = math.floor(distance).."m"
+						dist.Position = Vector2.new(pos.X, bottom.Y + 2)
+						dist.Visible = true
+					end
 
 				else
 					box.Visible = false
@@ -172,7 +152,7 @@ local function createESP(player)
 				end
 
 				if lineEnabled then
-					line.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+					line.From = Vector2.new(Camera.ViewportSize.X/2,0)
 					line.To = Vector2.new(pos.X,pos.Y)
 					line.Visible = true
 				else
@@ -186,8 +166,9 @@ local function createESP(player)
 				line.Visible = false
 			end
 		end
-	end)
-end
+	end
+
+end)
 
 for _,p in pairs(Players:GetPlayers()) do
 	createESP(p)
@@ -213,7 +194,7 @@ flyBtn.MouseButton1Click:Connect(function()
 
 	fly = not fly
 
-	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	local char = LocalPlayer.Character
 	local hrp = char:WaitForChild("HumanoidRootPart")
 
 	if fly then
@@ -253,8 +234,7 @@ speedBtn.MouseButton1Click:Connect(function()
 
 	speedEnabled = not speedEnabled
 
-	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 
 	if humanoid then
 		if speedEnabled then
@@ -292,40 +272,5 @@ RunService.Stepped:Connect(function()
 			end
 		end
 	end
-
-end)
-
--- INVISIBLE
-local invisible = false
-local savedPos
-
-invisibleBtn.MouseButton1Click:Connect(function()
-
-invisible = not invisible
-local player = game.Players.LocalPlayer
-local char = player.Character
-
-if invisible then
-
-    savedPos = char.HumanoidRootPart.CFrame
-
-    char:MoveTo(Vector3.new(0,999999,0))
-    task.wait(0.2)
-
-    player.Character = nil
-    task.wait(0.1)
-
-    player.Character = char
-    workspace.CurrentCamera.CameraSubject = char.Humanoid
-
-    char.HumanoidRootPart.CFrame = savedPos
-
-    invisibleBtn.Text = "INVISIBLE ON"
-
-else
-
-    invisibleBtn.Text = "INVISIBLE OFF"
-
-end
 
 end)
