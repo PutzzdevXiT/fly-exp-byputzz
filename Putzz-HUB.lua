@@ -1,10 +1,9 @@
---// PUTZZDEV-HUB FINAL (Double Tap 3 Jari untuk Buka/Tutup)
+--// PUTZZDEV-HUB FINAL (Super Kece + All Features)
 -- Ukuran: Sedang (350x450), semua fitur siap pakai
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -312,6 +311,18 @@ lineBlue.Position = UDim2.new(0.1,0,1,-2)
 lineBlue.BackgroundColor3 = Color3.fromRGB(0,200,255)
 Instance.new("UICorner", lineBlue).CornerRadius = UDim.new(0,2)
 
+-- Close button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Parent = header
+closeBtn.Size = UDim2.new(0,35,0,35)
+closeBtn.Position = UDim2.new(1,-35,0,10)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255,100,100)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 22
+closeBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+
 -- Tab bar
 local tabBar = Instance.new("Frame")
 tabBar.Parent = mainFrame
@@ -422,10 +433,10 @@ makeButton(tabMisc, "🔄 Refresh ESP", y, function()
     for _, p in pairs(Players:GetPlayers()) do createESP(p) end
 end); y = y + 46
 
-makeButton(tabMisc, "📋 Copy Discord", y, function()
+makeButton(tabMisc, "📋 Copy Tiktok dev", y, function()
     if setclipboard then
-        setclipboard("discord.gg/putzzhub")
-        notify("Discord copied!")
+        setclipboard("putzz_mvpp")
+        notify("TIKTOK DEV copied!")
     end
 end); y = y + 46
 
@@ -460,31 +471,48 @@ notify("Putzzdev-HUB Final Loaded!")
 mainFrame.Position = UDim2.new(0.5,-175,0.6,-225)
 TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Position = UDim2.new(0.5,-175,0.5,-225)}):Play()
 
--- ================== DOUBLE TAP 3 JARI (TANPA MENGUBAH APAPUN) ==================
--- Fitur: ketuk layar 2 kali dengan 3 jari untuk buka/tutup menu
-local activeTouches = {}
-local lastThreeTouchTime = 0
-local doubleTapInterval = 0.5
+-- ================= OPEN / CLOSE BUTTON =================
 
-local function onTouchBegan(touch)
-    activeTouches[touch.UserInputState] = true
-    local count = 0
-    for _ in pairs(activeTouches) do
-        count = count + 1
-    end
-    if count == 3 then
-        local now = tick()
-        if now - lastThreeTouchTime < doubleTapInterval then
-            -- Double tap 3 jari terdeteksi
-            mainFrame.Visible = not mainFrame.Visible
-        end
-        lastThreeTouchTime = now
-    end
-end
+local openBtn = Instance.new("TextButton")
+openBtn.Parent = ScreenGui
+openBtn.Size = UDim2.new(0,55,0,55)
+openBtn.Position = UDim2.new(0,20,0.5,-27)
+openBtn.BackgroundColor3 = Color3.fromRGB(0,200,255)
+openBtn.Text = "P"
+openBtn.TextColor3 = Color3.new(1,1,1)
+openBtn.Font = Enum.Font.GothamBlack
+openBtn.TextSize = 22
+openBtn.AutoButtonColor = true
+openBtn.ZIndex = 10
 
-local function onTouchEnded(touch)
-    activeTouches[touch.UserInputState] = nil
-end
+local corner = Instance.new("UICorner")
+corner.Parent = openBtn
+corner.CornerRadius = UDim.new(1,0)
 
-UserInputService.TouchStarted:Connect(onTouchBegan)
-UserInputService.TouchEnded:Connect(onTouchEnded)
+local stroke = Instance.new("UIStroke")
+stroke.Parent = openBtn
+stroke.Color = Color3.fromRGB(255,255,255)
+stroke.Thickness = 1.5
+
+-- toggle
+local menuOpen = true
+
+openBtn.MouseButton1Click:Connect(function()
+
+	menuOpen = not menuOpen
+
+	if menuOpen then
+		mainFrame.Visible = true
+		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
+			Position = UDim2.new(0.5,-175,0.5,-225)
+		}):Play()
+	else
+		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
+			Position = UDim2.new(0.5,-175,1,0)
+		}):Play()
+
+		task.wait(0.25)
+		mainFrame.Visible = false
+	end
+
+end)
