@@ -1,5 +1,5 @@
---// Putzzdev-HUB (Super Kece Edition)
--- Dengan desain modern: rounded, shadow, gradient, animasi
+--// PUTZZDEV-HUB FINAL (Super Kece + All Features)
+-- Ukuran: Sedang (350x450), semua fitur siap pakai
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,172 +7,292 @@ local TweenService = game:GetService("TweenService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
--- GUI Utama
+-- ================== VARIABEL FITUR ==================
+-- ESP
+local espEnabled = false
+local lineEnabled = false
+local healthEnabled = false
+local ESPTable = {}
+
+-- Fly
+local flyEnabled = false
+local flySpeed = 60
+local bv, bg
+
+-- Speed
+local speedEnabled = false
+local normalSpeed = 16
+local fastSpeed = 60
+
+-- NoClip
+local noclipEnabled = false
+
+-- ================== FUNGSI ESP ASLI ==================
+local function createESP(player)
+    if player == LocalPlayer then return end
+
+    local box = Drawing.new("Square")
+    box.Thickness = 2
+    box.Color = Color3.fromRGB(0,255,0)
+    box.Filled = false
+
+    local name = Drawing.new("Text")
+    name.Size = 16
+    name.Color = Color3.new(1,1,1)
+    name.Center = true
+    name.Outline = true
+
+    local dist = Drawing.new("Text")
+    dist.Size = 13
+    dist.Color = Color3.new(1,1,1)
+    dist.Center = true
+    dist.Outline = true
+
+    local line = Drawing.new("Line")
+    line.Thickness = 1
+    line.Color = Color3.fromRGB(255,255,255)
+
+    local healthBg = Drawing.new("Square")
+    healthBg.Thickness = 1
+    healthBg.Color = Color3.fromRGB(30,30,30)
+    healthBg.Filled = true
+
+    local healthFg = Drawing.new("Square")
+    healthFg.Thickness = 0
+    healthFg.Color = Color3.fromRGB(0,255,0)
+    healthFg.Filled = true
+
+    ESPTable[player] = {box, name, dist, line, healthBg, healthFg}
+end
+
+RunService.RenderStepped:Connect(function()
+    for player, esp in pairs(ESPTable) do
+        local box, name, dist, line, healthBg, healthFg = unpack(esp)
+
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
+            local hrp = char.HumanoidRootPart
+            local head = char.Head
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+            local pos, visible = Camera:WorldToViewportPoint(hrp.Position)
+
+            if visible then
+                local top = Camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.5,0))
+                local bottom = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0,3,0))
+
+                local height = math.abs(top.Y - bottom.Y)
+                local width = height / 2
+
+                if espEnabled then
+                    box.Size = Vector2.new(width, height)
+                    box.Position = Vector2.new(pos.X - width/2, top.Y)
+                    box.Visible = true
+
+                    name.Position = Vector2.new(pos.X, top.Y - 16)
+                    name.Text = player.Name
+                    name.Visible = true
+
+                    local myChar = LocalPlayer.Character
+                    if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                        local distance = (myChar.HumanoidRootPart.Position - hrp.Position).Magnitude
+                        dist.Text = math.floor(distance).."m"
+                        dist.Position = Vector2.new(pos.X, bottom.Y + 2)
+                        dist.Visible = true
+                    end
+                else
+                    box.Visible = false
+                    name.Visible = false
+                    dist.Visible = false
+                end
+
+                if healthEnabled and humanoid then
+                    local healthPercent = humanoid.Health / humanoid.MaxHealth
+                    local barWidth = width * 0.8
+                    local barHeight = 4
+                    local barX = pos.X - barWidth/2
+                    local barY = top.Y - 20
+
+                    healthBg.Size = Vector2.new(barWidth, barHeight)
+                    healthBg.Position = Vector2.new(barX, barY)
+                    healthBg.Visible = true
+
+                    healthFg.Size = Vector2.new(barWidth * healthPercent, barHeight)
+                    healthFg.Position = Vector2.new(barX, barY)
+                    healthFg.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                    healthFg.Visible = true
+                else
+                    healthBg.Visible = false
+                    healthFg.Visible = false
+                end
+
+                if lineEnabled then
+                    line.From = Vector2.new(Camera.ViewportSize.X/2, 0)
+                    line.To = Vector2.new(pos.X, pos.Y)
+                    line.Visible = true
+                else
+                    line.Visible = false
+                end
+            else
+                box.Visible = false
+                name.Visible = false
+                dist.Visible = false
+                line.Visible = false
+                healthBg.Visible = false
+                healthFg.Visible = false
+            end
+        end
+    end
+end)
+
+for _, p in pairs(Players:GetPlayers()) do
+    createESP(p)
+end
+
+Players.PlayerAdded:Connect(createESP)
+
+-- ================== FUNGSI FLY ==================
+local function startFly()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(9e9,9e9,9e9)
+    bv.Parent = hrp
+
+    bg = Instance.new("BodyGyro")
+    bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
+    bg.Parent = hrp
+
+    RunService.RenderStepped:Connect(function()
+        if flyEnabled then
+            bg.CFrame = Camera.CFrame
+            bv.Velocity = Camera.CFrame.LookVector * flySpeed
+        end
+    end)
+end
+
+local function stopFly()
+    if bv then bv:Destroy() bv = nil end
+    if bg then bg:Destroy() bg = nil end
+end
+
+-- ================== FUNGSI NOCLIP ==================
+RunService.Stepped:Connect(function()
+    if noclipEnabled and LocalPlayer.Character then
+        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- ================== GUI SUPER KECE (UKURAN SEDANG) ==================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game.CoreGui
-ScreenGui.Name = "PutzzdevHub"
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Name = "PutzzdevHubFinal"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Fungsi untuk membuat shadow (efek bayangan)
-local function createShadow(parent, size, position, color)
-    local shadow = Instance.new("ImageLabel")
-    shadow.Parent = parent
-    shadow.BackgroundTransparency = 1
-    shadow.Size = size
-    shadow.Position = position
-    shadow.Image = "rbxassetid://6015897843" -- Asset shadow
-    shadow.ImageColor3 = color or Color3.new(0,0,0)
-    shadow.ImageTransparency = 0.8
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(10,10,118,118)
-    return shadow
+-- Fungsi rounded frame
+local function makeRounded(parent, size, pos, color, radius)
+    local f = Instance.new("Frame")
+    f.Parent = parent
+    f.Size = size
+    f.Position = pos
+    f.BackgroundColor3 = color or Color3.fromRGB(30,30,30)
+    f.BorderSizePixel = 0
+    f.ClipsDescendants = true
+
+    local c = Instance.new("UICorner")
+    c.Parent = f
+    c.CornerRadius = UDim.new(0, radius or 8)
+    return f
 end
 
--- Fungsi untuk membuat frame dengan rounded corners
-local function makeRoundedFrame(parent, size, pos, color, radius)
-    local frame = Instance.new("Frame")
-    frame.Parent = parent
-    frame.Size = size
-    frame.Position = pos
-    frame.BackgroundColor3 = color or Color3.fromRGB(30,30,30)
-    frame.BorderSizePixel = 0
-    frame.ClipsDescendants = true
-
-    local corner = Instance.new("UICorner")
-    corner.Parent = frame
-    corner.CornerRadius = UDim.new(0, radius or 8)
-
-    return frame
+-- Fungsi gradient
+local function addGradient(frame, c1, c2, rot)
+    local g = Instance.new("UIGradient")
+    g.Parent = frame
+    g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, c1), ColorSequenceKeypoint.new(1, c2)})
+    g.Rotation = rot or 90
+    return g
 end
 
--- Fungsi untuk membuat gradient
-local function addGradient(frame, color1, color2, rotation)
-    local gradient = Instance.new("UIGradient")
-    gradient.Parent = frame
-    gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, color1), ColorSequenceKeypoint.new(1, color2)})
-    gradient.Rotation = rotation or 90
-    return gradient
-end
-
--- Fungsi untuk membuat tombol keren
+-- Fungsi button
 local function makeButton(parent, text, yPos, callback)
-    local btnFrame = makeRoundedFrame(parent, UDim2.new(0.9,0,0,45), UDim2.new(0.05,0,0,yPos), Color3.fromRGB(45,45,55), 6)
-    addGradient(btnFrame, Color3.fromRGB(55,55,65), Color3.fromRGB(40,40,50), 90)
-
-    local btn = Instance.new("TextButton")
-    btn.Parent = btnFrame
-    btn.Size = UDim2.new(1,0,1,0)
-    btn.BackgroundTransparency = 1
-    btn.Text = text
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
-
-    -- Efek hover
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btnFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(65,65,75)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btnFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45,45,55)}):Play()
-    end)
-
-    btn.MouseButton1Click:Connect(callback)
-    return btnFrame
-end
-
--- Fungsi untuk membuat toggle (saklar)
-local function makeToggle(parent, text, yPos, default, callback)
-    local toggleFrame = makeRoundedFrame(parent, UDim2.new(0.9,0,0,45), UDim2.new(0.05,0,0,yPos), Color3.fromRGB(45,45,55), 6)
-    addGradient(toggleFrame, Color3.fromRGB(55,55,65), Color3.fromRGB(40,40,50), 90)
+    local btn = makeRounded(parent, UDim2.new(0.9,0,0,40), UDim2.new(0.05,0,0,yPos), Color3.fromRGB(45,45,55), 6)
+    addGradient(btn, Color3.fromRGB(60,60,70), Color3.fromRGB(40,40,50), 90)
 
     local label = Instance.new("TextLabel")
-    label.Parent = toggleFrame
-    label.Size = UDim2.new(0.7,0,1,0)
+    label.Parent = btn
+    label.Size = UDim2.new(1,0,1,0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1,1,1)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 15
+
+    local click = Instance.new("TextButton")
+    click.Parent = btn
+    click.Size = UDim2.new(1,0,1,0)
+    click.BackgroundTransparency = 1
+    click.Text = ""
+
+    click.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- Fungsi toggle
+local function makeToggle(parent, text, yPos, default, callback)
+    local tog = makeRounded(parent, UDim2.new(0.9,0,0,40), UDim2.new(0.05,0,0,yPos), Color3.fromRGB(45,45,55), 6)
+    addGradient(tog, Color3.fromRGB(60,60,70), Color3.fromRGB(40,40,50), 90)
+
+    local label = Instance.new("TextLabel")
+    label.Parent = tog
+    label.Size = UDim2.new(0.6,0,1,0)
     label.Position = UDim2.new(0.05,0,0,0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = Color3.new(1,1,1)
     label.Font = Enum.Font.Gotham
-    label.TextSize = 16
+    label.TextSize = 15
     label.TextXAlignment = Enum.TextXAlignment.Left
 
-    local toggleBtn = Instance.new("Frame")
-    toggleBtn.Parent = toggleFrame
-    toggleBtn.Size = UDim2.new(0,50,0,25)
-    toggleBtn.Position = UDim2.new(0.85, -25, 0.5, -12.5)
-    toggleBtn.BackgroundColor3 = default and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)
-    toggleBtn.BorderSizePixel = 0
+    local switch = makeRounded(tog, UDim2.new(0,46,0,24), UDim2.new(0.8,0,0.5,-12), default and Color3.fromRGB(0,180,0) or Color3.fromRGB(100,100,100), 12)
+    switch.BackgroundColor3 = default and Color3.fromRGB(0,180,0) or Color3.fromRGB(100,100,100)
 
-    local cornerBtn = Instance.new("UICorner")
-    cornerBtn.Parent = toggleBtn
-    cornerBtn.CornerRadius = UDim.new(0,12)
-
-    local circle = Instance.new("Frame")
-    circle.Parent = toggleBtn
-    circle.Size = UDim2.new(0,21,0,21)
-    circle.Position = default and UDim2.new(0.9, -21, 0.5, -10.5) or UDim2.new(0.1,0,0.5,-10.5)
-    circle.BackgroundColor3 = Color3.new(1,1,1)
-    circle.BorderSizePixel = 0
-
-    local cornerCircle = Instance.new("UICorner")
-    cornerCircle.Parent = circle
-    cornerCircle.CornerRadius = UDim.new(1,0)
+    local circle = makeRounded(switch, UDim2.new(0,20,0,20), default and UDim2.new(1,-22,0.5,-10) or UDim2.new(0.05,0,0.5,-10), Color3.new(1,1,1), 10)
 
     local state = default
-    local toggleButton = Instance.new("TextButton")
-    toggleButton.Parent = toggleFrame
-    toggleButton.Size = UDim2.new(1,0,1,0)
-    toggleButton.BackgroundTransparency = 1
-    toggleButton.Text = ""
+    local click = Instance.new("TextButton")
+    click.Parent = tog
+    click.Size = UDim2.new(1,0,1,0)
+    click.BackgroundTransparency = 1
+    click.Text = ""
 
-    toggleButton.MouseButton1Click:Connect(function()
+    click.MouseButton1Click:Connect(function()
         state = not state
-        TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(0,200,0) or Color3.fromRGB(100,100,100)}):Play()
-        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(0.9, -21, 0.5, -10.5) or UDim2.new(0.1,0,0.5,-10.5)}):Play()
+        TweenService:Create(switch, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(0,180,0) or Color3.fromRGB(100,100,100)}):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {Position = state and UDim2.new(1,-22,0.5,-10) or UDim2.new(0.05,0,0.5,-10)}):Play()
         callback(state)
     end)
-
-    return toggleFrame
+    return tog
 end
 
--- ================== MAIN WINDOW ==================
--- Shadow luar
-local shadowOuter = createShadow(ScreenGui, UDim2.new(0,400,0,500), UDim2.new(0.5,-200,0.5,-250), Color3.new(0,0,0))
-
--- Frame utama dengan rounded besar
-local mainFrame = makeRoundedFrame(ScreenGui, UDim2.new(0,380,0,480), UDim2.new(0.5,-190,0.5,-240), Color3.fromRGB(25,25,35), 16)
-mainFrame.ClipsDescendants = true
-
--- Gradient background
-local gradient = Instance.new("UIGradient")
-gradient.Parent = mainFrame
-gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(20,20,30)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(35,35,45))
-})
-gradient.Rotation = 45
-
--- Shadow dalam (untuk efek kedalaman)
-local innerShadow = Instance.new("ImageLabel")
-innerShadow.Parent = mainFrame
-innerShadow.BackgroundTransparency = 1
-innerShadow.Size = UDim2.new(1,20,1,20)
-innerShadow.Position = UDim2.new(0,-10,0,-10)
-innerShadow.Image = "rbxassetid://6015897843"
-innerShadow.ImageColor3 = Color3.new(1,1,1)
-innerShadow.ImageTransparency = 0.95
-innerShadow.ScaleType = Enum.ScaleType.Slice
-innerShadow.SliceCenter = Rect.new(10,10,118,118)
+-- Main window (350x450)
+local mainFrame = makeRounded(ScreenGui, UDim2.new(0,350,0,450), UDim2.new(0.5,-175,0.5,-225), Color3.fromRGB(20,20,30), 16)
+addGradient(mainFrame, Color3.fromRGB(25,25,35), Color3.fromRGB(35,35,45), 45)
 
 -- Header
 local header = Instance.new("Frame")
 header.Parent = mainFrame
-header.Size = UDim2.new(1,0,0,60)
+header.Size = UDim2.new(1,0,0,55)
 header.BackgroundTransparency = 1
-header.BorderSizePixel = 0
 
--- Logo atau title
 local title = Instance.new("TextLabel")
 title.Parent = header
 title.Size = UDim2.new(1,0,1,0)
@@ -180,183 +300,173 @@ title.BackgroundTransparency = 1
 title.Text = "PUTZZDEV-HUB"
 title.TextColor3 = Color3.fromRGB(0,200,255)
 title.Font = Enum.Font.GothamBlack
-title.TextSize = 28
+title.TextSize = 24
 title.TextStrokeTransparency = 0.7
-title.TextStrokeColor3 = Color3.new(0,0,0)
 
--- Garis bawah berwarna
-local line = Instance.new("Frame")
-line.Parent = header
-line.Size = UDim2.new(0.8,0,0,3)
-line.Position = UDim2.new(0.1,0,1,-3)
-line.BackgroundColor3 = Color3.fromRGB(0,200,255)
-line.BorderSizePixel = 0
+-- Garis biru
+local lineBlue = Instance.new("Frame")
+lineBlue.Parent = header
+lineBlue.Size = UDim2.new(0.8,0,0,2)
+lineBlue.Position = UDim2.new(0.1,0,1,-2)
+lineBlue.BackgroundColor3 = Color3.fromRGB(0,200,255)
+Instance.new("UICorner", lineBlue).CornerRadius = UDim.new(0,2)
 
-local cornerLine = Instance.new("UICorner")
-cornerLine.Parent = line
-cornerLine.CornerRadius = UDim.new(0,2)
+-- Close button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Parent = header
+closeBtn.Size = UDim2.new(0,35,0,35)
+closeBtn.Position = UDim2.new(1,-35,0,10)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255,100,100)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 22
+closeBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
--- Tab buttons
-local tabFrame = Instance.new("Frame")
-tabFrame.Parent = mainFrame
-tabFrame.Size = UDim2.new(1,0,0,45)
-tabFrame.Position = UDim2.new(0,0,0,60)
-tabFrame.BackgroundTransparency = 1
+-- Tab bar
+local tabBar = Instance.new("Frame")
+tabBar.Parent = mainFrame
+tabBar.Size = UDim2.new(1,0,0,40)
+tabBar.Position = UDim2.new(0,0,0,55)
+tabBar.BackgroundTransparency = 1
 
-local tabButtons = {}
-local tabContents = {}
+local tabs = {}
+local contents = {}
 
 local function createTab(name, icon)
+    local idx = #tabs + 1
     local btn = Instance.new("TextButton")
-    btn.Parent = tabFrame
+    btn.Parent = tabBar
     btn.Size = UDim2.new(0.25,0,1,0)
-    btn.Position = UDim2.new((#tabButtons)*0.25,0,0,0)
+    btn.Position = UDim2.new((idx-1)*0.25,0,0,0)
     btn.BackgroundTransparency = 1
-    btn.Text = icon .. " " .. name
-    btn.TextColor3 = Color3.fromRGB(200,200,200)
+    btn.Text = icon.." "..name
+    btn.TextColor3 = Color3.fromRGB(180,180,180)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
-
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255,255,255)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200,200,200)}):Play()
-    end)
+    btn.TextSize = 14
 
     local content = Instance.new("ScrollingFrame")
     content.Parent = mainFrame
-    content.Size = UDim2.new(1,0,1,-105)
-    content.Position = UDim2.new(0,0,0,105)
+    content.Size = UDim2.new(1,0,1,-95)
+    content.Position = UDim2.new(0,0,0,95)
     content.BackgroundTransparency = 1
     content.BorderSizePixel = 0
-    content.ScrollBarThickness = 6
-    content.ScrollBarImageColor3 = Color3.fromRGB(100,100,100)
+    content.ScrollBarThickness = 5
     content.CanvasSize = UDim2.new(0,0,0,0)
     content.Visible = false
 
     local layout = Instance.new("UIListLayout")
     layout.Parent = content
-    layout.Padding = UDim.new(0,8)
+    layout.Padding = UDim.new(0,6)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
-    table.insert(tabButtons, btn)
-    table.insert(tabContents, content)
+    table.insert(tabs, btn)
+    table.insert(contents, content)
 
     btn.MouseButton1Click:Connect(function()
-        for i,b in ipairs(tabButtons) do
-            TweenService:Create(b, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200,200,200)}):Play()
-            tabContents[i].Visible = false
+        for i,b in ipairs(tabs) do
+            b.TextColor3 = Color3.fromRGB(180,180,180)
+            contents[i].Visible = false
         end
-        TweenService:Create(btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(0,200,255)}):Play()
+        btn.TextColor3 = Color3.fromRGB(0,200,255)
         content.Visible = true
     end)
-
     return content
 end
 
--- Buat tab-tab
-local tabMain = createTab("Main", "🏠")
+-- Buat tab
+local tabMain = createTab("MAIN", "🏠")
 local tabESP = createTab("ESP", "👁️")
-local tabMove = createTab("Movement", "🏃")
-local tabMisc = createTab("Misc", "⚙️")
+local tabMove = createTab("MOVE", "🏃")
+local tabMisc = createTab("MISC", "⚙️")
 
--- Isi tab Main
-local yPos = 10
-makeButton(tabMain, "Test Button", yPos, function() print("Clicked") end); yPos = yPos + 55
-makeToggle(tabMain, "Test Toggle", yPos, false, function(s) print("Toggle:", s) end); yPos = yPos + 55
+-- ===== TAB MAIN =====
+local y = 10
+makeToggle(tabMain, "Fly", y, false, function(s)
+    flyEnabled = s
+    if s then startFly() else stopFly() end
+end); y = y + 46
 
-tabMain.CanvasSize = UDim2.new(0,0,0,yPos+20)
+makeToggle(tabMain, "Speed", y, false, function(s)
+    speedEnabled = s
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = s and fastSpeed or normalSpeed
+    end
+end); y = y + 46
 
--- Isi tab ESP
-yPos = 10
-makeToggle(tabESP, "ESP Player", yPos, false, function(s)
-    -- Panggil fungsi ESP kamu di sini
-    print("ESP Player:", s)
-end); yPos = yPos + 55
+makeToggle(tabMain, "NoClip", y, false, function(s)
+    noclipEnabled = s
+end); y = y + 46
 
-makeToggle(tabESP, "ESP Line", yPos, false, function(s)
-    print("ESP Line:", s)
-end); yPos = yPos + 55
+tabMain.CanvasSize = UDim2.new(0,0,0,y+10)
 
-makeToggle(tabESP, "Health Bar", yPos, false, function(s)
-    print("Health Bar:", s)
-end); yPos = yPos + 55
+-- ===== TAB ESP =====
+y = 10
+makeToggle(tabESP, "ESP Player", y, false, function(s) espEnabled = s end); y = y + 46
+makeToggle(tabESP, "ESP Line", y, false, function(s) lineEnabled = s end); y = y + 46
+makeToggle(tabESP, "Health Bar", y, false, function(s) healthEnabled = s end); y = y + 46
+tabESP.CanvasSize = UDim2.new(0,0,0,y+10)
 
-tabESP.CanvasSize = UDim2.new(0,0,0,yPos+20)
+-- ===== TAB MOVE =====
+y = 10
+makeButton(tabMove, "⬆ Naik (Fly)", y, function()
+    if flyEnabled then
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Velocity = hrp.Velocity + Vector3.new(0,50,0) end
+    end
+end); y = y + 46
 
--- Isi tab Movement
-yPos = 10
-makeToggle(tabMove, "Fly", yPos, false, function(s)
-    print("Fly:", s)
-end); yPos = yPos + 55
+makeButton(tabMove, "⬇ Turun (Fly)", y, function()
+    if flyEnabled then
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Velocity = hrp.Velocity - Vector3.new(0,50,0) end
+    end
+end); y = y + 46
 
-makeToggle(tabMove, "Speed", yPos, false, function(s)
-    print("Speed:", s)
-end); yPos = yPos + 55
+tabMove.CanvasSize = UDim2.new(0,0,0,y+10)
 
-makeToggle(tabMove, "NoClip", yPos, false, function(s)
-    print("NoClip:", s)
-end); yPos = yPos + 55
+-- ===== TAB MISC =====
+y = 10
+makeButton(tabMisc, "🔄 Refresh ESP", y, function()
+    for p,_ in pairs(ESPTable) do ESPTable[p] = nil end
+    for _, p in pairs(Players:GetPlayers()) do createESP(p) end
+end); y = y + 46
 
-tabMove.CanvasSize = UDim2.new(0,0,0,yPos+20)
+makeButton(tabMisc, "📋 Copy Discord", y, function()
+    if setclipboard then
+        setclipboard("discord.gg/putzzhub")
+        notify("Discord copied!")
+    end
+end); y = y + 46
 
--- Isi tab Misc
-yPos = 10
-makeButton(tabMisc, "Refresh", yPos, function()
-    print("Refresh clicked")
-end); yPos = yPos + 55
-
-makeButton(tabMisc, "Settings", yPos, function()
-    print("Settings clicked")
-end); yPos = yPos + 55
-
-tabMisc.CanvasSize = UDim2.new(0,0,0,yPos+20)
+tabMisc.CanvasSize = UDim2.new(0,0,0,y+10)
 
 -- Aktifkan tab pertama
-tabButtons[1].TextColor3 = Color3.fromRGB(0,200,255)
-tabContents[1].Visible = true
+tabs[1].TextColor3 = Color3.fromRGB(0,200,255)
+contents[1].Visible = true
 
--- Close button (X)
-local closeBtn = Instance.new("TextButton")
-closeBtn.Parent = header
-closeBtn.Size = UDim2.new(0,40,0,40)
-closeBtn.Position = UDim2.new(1,-40,0,10)
-closeBtn.BackgroundTransparency = 1
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.fromRGB(255,100,100)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 24
-closeBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
+-- Notifikasi
+local function notify(msg)
+    local n = makeRounded(ScreenGui, UDim2.new(0,250,0,40), UDim2.new(0.5,-125,0.9,0), Color3.fromRGB(30,30,40), 6)
+    addGradient(n, Color3.fromRGB(50,50,60), Color3.fromRGB(30,30,40), 90)
+    local l = Instance.new("TextLabel", n)
+    l.Size = UDim2.new(1,0,1,0)
+    l.BackgroundTransparency = 1
+    l.Text = msg
+    l.TextColor3 = Color3.new(1,1,1)
+    l.Font = Enum.Font.Gotham
+    l.TextSize = 14
 
--- Animasi muncul
-mainFrame.Position = UDim2.new(0.5,-190,0.6,-240)
-TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Position = UDim2.new(0.5,-190,0.5,-240)}):Play()
-
--- Notifikasi keren
-local function notify(msg, duration)
-    local notif = makeRoundedFrame(ScreenGui, UDim2.new(0,300,0,50), UDim2.new(0.5,-150,0.9,0), Color3.fromRGB(45,45,55), 8)
-    notif.BackgroundColor3 = Color3.fromRGB(30,30,40)
-    addGradient(notif, Color3.fromRGB(50,50,60), Color3.fromRGB(30,30,40), 90)
-
-    local label = Instance.new("TextLabel")
-    label.Parent = notif
-    label.Size = UDim2.new(1,0,1,0)
-    label.BackgroundTransparency = 1
-    label.Text = msg
-    label.TextColor3 = Color3.new(1,1,1)
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 16
-
-    TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(0.5,-150,0.8,0)}):Play()
-    wait(duration or 3)
-    TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(0.5,-150,0.9,0)}):Play()
+    TweenService:Create(n, TweenInfo.new(0.3), {Position = UDim2.new(0.5,-125,0.8,0)}):Play()
+    wait(2)
+    TweenService:Create(n, TweenInfo.new(0.3), {Position = UDim2.new(0.5,-125,0.9,0)}):Play()
     wait(0.3)
-    notif:Destroy()
+    n:Destroy()
 end
 
-notify("Putzzdev-HUB", 2)
+notify("Putzzdev-HUB Final Loaded!")
 
-print("GUI")
+-- Animasi masuk
+mainFrame.Position = UDim2.new(0.5,-175,0.6,-225)
+TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Position = UDim2.new(0.5,-175,0.5,-225)}):Play()
