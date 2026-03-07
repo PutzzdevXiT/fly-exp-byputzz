@@ -618,31 +618,50 @@ TweenService:Create(notifyFrame, TweenInfo.new(0.3), {Position = UDim2.new(0.5, 
 wait(0.3)
 notifyFrame:Destroy()
 
--- ================== DOUBLE TAP 3 JARI ==================
-local activeTouches = {}
-local lastThreeTouchTime = 0
-local doubleTapInterval = 0.5
+-- ================= OPEN / CLOSE BUTTON =================
 
-local function onTouchBegan(touch)
-    activeTouches[touch.UserInputState] = true
-    local count = 0
-    for _ in pairs(activeTouches) do
-        count = count + 1
-    end
-    if count == 3 then
-        local now = tick()
-        if now - lastThreeTouchTime < doubleTapInterval then
-            mainFrame.Visible = not mainFrame.Visible
-        end
-        lastThreeTouchTime = now
-    end
-end
+local openBtn = Instance.new("TextButton")
+openBtn.Parent = ScreenGui
+openBtn.Size = UDim2.new(0,55,0,55)
+openBtn.Position = UDim2.new(0,20,0.5,-27)
+openBtn.BackgroundColor3 = Color3.fromRGB(0,200,255)
+openBtn.Text = "P"
+openBtn.TextColor3 = Color3.new(1,1,1)
+openBtn.Font = Enum.Font.GothamBlack
+openBtn.TextSize = 22
+openBtn.AutoButtonColor = true
+openBtn.ZIndex = 10
 
-local function onTouchEnded(touch)
-    activeTouches[touch.UserInputState] = nil
-end
+local corner = Instance.new("UICorner")
+corner.Parent = openBtn
+corner.CornerRadius = UDim.new(1,0)
 
-UserInputService.TouchStarted:Connect(onTouchBegan)
-UserInputService.TouchEnded:Connect(onTouchEnded)
+local stroke = Instance.new("UIStroke")
+stroke.Parent = openBtn
+stroke.Color = Color3.fromRGB(255,255,255)
+stroke.Thickness = 1.5
 
-print("Putzzdev-HUB v4 loaded!")
+-- toggle
+local menuOpen = true
+
+openBtn.MouseButton1Click:Connect(function()
+
+	menuOpen = not menuOpen
+
+	if menuOpen then
+		mainFrame.Visible = true
+		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
+			Position = UDim2.new(0.5,-175,0.5,-225)
+		}):Play()
+	else
+		TweenService:Create(mainFrame,TweenInfo.new(0.25),{
+			Position = UDim2.new(0.5,-175,1,0)
+		}):Play()
+
+		task.wait(0.25)
+		mainFrame.Visible = false
+	end
+
+end)
+
+print("Putzzdev-HUB")
